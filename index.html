@@ -1052,16 +1052,13 @@ function println(msg){
 
 		function processLibs(code){
 			let sketchTest = code.replace(/(?:\r\n|\r|\n|\t)/g, '');
-			let sketchLoadScriptsRegEx = /(?:loadScripts|libs|scripts)\s+=\s+\[(.*["']\])/
-			let sketchLoadScripts = sketchLoadScriptsRegEx.exec(sketchTest);
+			let sketchScriptsString = sketchTest.match(/(?=loadScripts|libs|scripts).*?(\])/);
 			let scriptsList = [];
-			if(sketchLoadScripts != undefined){
-				sketchLoadScripts = sketchLoadScripts[1].replace(/["']/g, '').replace(/[' '|\]]/g, '');
-				sketchLoadScripts = sketchLoadScripts.split(',');
-
+			if(sketchScriptsString != undefined){
+				let sketchLoadScripts = sketchScriptsString[0].match(/(["'])(?:(?=(\\?))\2.)*?\1/g);
 				for(let i=0; i < sketchLoadScripts.length; i++){
 					if(sketchLoadScripts[i] != ''){
-						scriptsList.push(sketchLoadScripts[i]);
+						scriptsList.push(sketchLoadScripts[i].replace(/["']/g, ''));
 					}
 				}
 			}
@@ -1213,7 +1210,13 @@ function println(msg){
 
 			// break infinite loops
 			if(!sketchCode.match(/(\/\/).*(no.*protect)/g)){
-				sketchCode = loopBreaker(sketchCode).code;
+				try{
+					sketchCode = loopBreaker(sketchCode).code;
+				} catch (e) {
+					console.log(`👀 error found near line ~ ${e.lineNumber}`);
+					// console.log(e.description)
+				  return false;
+				}
 			}
 
 			let updateVars = '\npmouseX=' + p5vars.mouseX + ';\npmouseY=' + p5vars.mouseY + ';\nmouseX=' + p5vars.mouseX + ';\nmouseY=' + p5vars.mouseY + ';\nframeCount=' + p5vars.frameCount + ';\n';
